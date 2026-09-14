@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд Хекслет Колледж — Итоги 2 квартала 2026</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: #f8f9fb;
+            color: #2b2b2b;
+            padding: 24px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 24px;
+        }
+        .logo-title {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0b0c10;
+            letter-spacing: -0.5px;
+        }
+        .logo span {
+            color: #6366f1; /* Hexlet violet */
+        }
+        .subtitle {
+            font-size: 15px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+        select {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            font-weight: 600;
+            outline: none;
+            background: #fff;
+            cursor: pointer;
+        }
+        /* KPI Cards */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid #edf2f7;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .kpi-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .kpi-val {
+            font-size: 34px;
+            font-weight: 700;
+            margin-top: 10px;
+            color: #0f172a;
+        }
+        .kpi-val.nps { color: #dc2626; }
+        .kpi-val.score { color: #2563eb; }
+        .kpi-val.resp { color: #475569; }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1.2fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 1024px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+        .chart-box {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid #edf2f7;
+        }
+        .chart-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chart-container {
+            position: relative;
+            height: 380px;
+            width: 100%;
+        }
+
+        /* Section Title */
+        .section-header {
+            margin: 32px 0 16px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .bottom-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo-title">
+            <div>
+                <div class="logo"><span>&gt;</span>хекслет колледж</div>
+                <div class="subtitle">Итоговый срез качества и лояльности за 2 квартал 2026 года</div>
+            </div>
+        </div>
+        <div class="controls">
+            <label style="display:flex; align-items:center; gap:8px; font-size:14px; color:#64748b;">
+                Регион / Сегмент:
+                <select id="filterSelect" onchange="updateDashboard()">
+                    <option value="RF_STUDENTS">Студенты: Общий по РФ</option>
+                    <option value="RF_PARENTS">Родители: Общий по РФ</option>
+                    <option value="SPB">Санкт-Петербург (Студенты)</option>
+                    <option value="MSK">Москва (Студенты)</option>
+                    <option value="NSK">Новосибирск (Студенты)</option>
+                    <option value="RND">Ростов-на-Дону (Студенты)</option>
+                    <option value="ONLINE">Онлайн (Студенты)</option>
+                </select>
+            </label>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <span class="kpi-label">Итоговый NPS (Q2 2026)</span>
+            <span class="kpi-val nps" id="kpiNPS">47,67</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">Средняя оценка</span>
+            <span class="kpi-val score" id="kpiScore">8,44</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">Количество респондентов</span>
+            <span class="kpi-val resp" id="kpiResp">900</span>
+        </div>
+    </div>
+
+    <!-- Main Charts -->
+    <div class="charts-grid">
+        <div class="chart-box">
+            <div class="chart-title">
+                <span>Динамика показателей NPS и Средней оценки</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="comboChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-box">
+            <div class="chart-title">
+                <span>Структура респондентов (Q2 2026)</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Charts: CSAT and Teachers -->
+    <div class="section-header">Оценка отделов и преподавательского состава</div>
+    <div class="bottom-grid">
+        <div class="chart-box">
+            <div class="chart-title">CSAT отделов (Воспитательный и Учебный)</div>
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="csatChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-box">
+            <div class="chart-title">Распределение преподавателей по зонам</div>
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="teacherChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Данные из презентации
+        const datasets = {
+            "RF_STUDENTS": {
+                quarters: ["3 кв. 24", "4 кв. 24", "1 кв. 25", "2 кв. 25", "3 кв. 25", "4 кв. 25", "1 кв. 26", "2 кв. 26"],
+                resp: [298, 504, 447, 604, 551, 1365, 1503, 900],
+                nps: [43.99, 44.83, 45.56, 55.98, 53.72, 46.67, 47.84, 47.67],
+                scores: [8.3, 8.4, 8.5, 8.7, 8.7, 8.4, 8.4, 8.44],
+                pie: [585, 159, 156], // Сторонники, Нейтралы, Критики
+                currentNPS: "47,67",
+                currentScore: "8,44",
+                currentResp: "900"
+            },
+            "RF_PARENTS": {
+                quarters: ["3 кв. 24", "4 кв. 24", "1 кв. 25", "2 кв. 25", "3 кв. 25", "2 кв. 26"],
+                resp: [0, 0, 0, 0, 0, 197],
+                nps: [65.32, 60.00, 56.49, 57.93, 57.58, 65.48],
+                scores: [8.3, 8.9, 8.77, 8.72, 8.51, 8.94],
+                pie: [148, 30, 19],
+                currentNPS: "65,48",
+                currentScore: "8,94",
+                currentResp: "197"
+            },
+            "SPB": {
+                quarters: ["3 кв. 24", "4 кв. 24", "1 кв. 25", "2 кв. 25", "3 кв. 25", "4 кв. 25", "1 кв. 26", "2 кв. 26"],
+                resp: [145, 244, 242, 271, 208, 828, 799, 510],
+                nps: [45.81, 48.12, 46.69, 47.78, 50.43, 41.55, 42.05, 44.71],
+                scores: [8.48, 8.62, 8.51, 8.50, 8.51, 8.30, 8.22, 8.32],
+                pie: [329, 80, 101],
+                currentNPS: "44,71",
+                currentScore: "8,32",
+                currentResp: "510"
+            },
+            "MSK": {
+                quarters: ["3 кв. 24", "4 кв. 24", "1 кв. 25", "2 кв. 25", "3 кв. 25", "4 кв. 25", "1 кв. 26", "2 кв. 26"],
+                resp: [71, 100, 96, 209, 124, 226, 192, 52],
+                nps: [45.21, 26.61, 54.17, 67.94, 29.69, 47.79, 48.96, 44.23],
+                scores: [8.42, 7.92, 8.76, 9.02, 8.76, 8.50, 8.41, 8.19],
+                pie: [31, 13, 8],
+                currentNPS: "44,23",
+                currentScore: "8,19",
+                currentResp: "52"
+            },
+            "NSK": {
+                quarters: ["4 кв. 24", "1 кв. 25", "2 кв. 25", "3 кв. 25", "4 кв. 25", "1 кв. 26", "2 кв. 26"],
+                resp: [75, 60, 93, 78, 104, 131, 140],
+                nps: [44.12, 36.67, 45.16, 57.14, 47.12, 48.85, 45.00],
+                scores: [8.54, 8.38, 8.42, 8.38, 8.40, 8.53, 8.41],
+                pie: [86, 31, 23],
+                currentNPS: "48,85",
+                currentScore: "8,53",
+                currentResp: "140"
+            },
+            "RND": {
+                quarters: ["3 кв. 24", "4 кв. 24", "1 кв. 25", "2 кв. 25", "3 кв. 25", "4 кв. 25", "1 кв. 26", "2 кв. 26"],
+                resp: [25, 33, 41, 30, 113, 116, 192, 79],
+                nps: [56.37, 42.78, 36.73, 80.00, 95.00, 75.00, 74.48, 83.54],
+                scores: [8.76, 8.39, 8.18, 8.60, 9.83, 9.30, 9.23, 9.51],
+                pie: [69, 7, 3],
+                currentNPS: "83,54",
+                currentScore: "9,51",
+                currentResp: "79"
+            },
+            "ONLINE": {
+                quarters: ["3 кв. 24", "4 кв. 24", "1 кв. 25", "2 кв. 25", "3 кв. 25", "1 кв. 26", "2 кв. 26"],
+                resp: [0, 0, 0, 0, 65, 189, 119],
+                nps: [15.68, 40.00, 40.00, 42.55, 50.77, 43.39, 41.18],
+                scores: [7.60, 8.20, 8.80, 8.28, 8.60, 8.33, 8.37],
+                pie: [70, 28, 21],
+                currentNPS: "41,18",
+                currentScore: "8,37",
+                currentResp: "119"
+            }
+        };
+
+        let comboChart, pieChart, csatChart, teacherChart;
+
+        function initCharts() {
+            const data = datasets["RF_STUDENTS"];
+
+            // 1. Комбинированный график
+            const ctxCombo = document.getElementById('comboChart').getContext('2d');
+            comboChart = new Chart(ctxCombo, {
+                data: {
+                    labels: data.quarters,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Количество респондентов',
+                            data: data.resp,
+                            backgroundColor: '#b0b7bd',
+                            borderRadius: 4,
+                            yAxisID: 'yResp',
+                            order: 3
+                        },
+                        {
+                            type: 'line',
+                            label: 'NPS',
+                            data: data.nps,
+                            borderColor: '#dc2626',
+                            backgroundColor: '#000000',
+                            pointBackgroundColor: '#000000',
+                            pointRadius: 5,
+                            borderWidth: 2.5,
+                            yAxisID: 'yMetrics',
+                            order: 1
+                        },
+                        {
+                            type: 'line',
+                            label: 'Средняя оценка',
+                            data: data.scores,
+                            borderColor: '#2563eb',
+                            backgroundColor: '#2563eb',
+                            pointBackgroundColor: '#2563eb',
+                            pointRadius: 4,
+                            borderWidth: 2,
+                            yAxisID: 'yMetrics',
+                            order: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        yResp: {
+                            type: 'linear',
+                            position: 'left',
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            title: { display: true, text: 'Респонденты' }
+                        },
+                        yMetrics: {
+                            type: 'linear',
+                            position: 'right',
+                            min: 0,
+                            max: 100,
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'Балл / NPS' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+
+            // 2. Круговая диаграмма
+            const ctxPie = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(ctxPie, {
+                type: 'pie',
+                data: {
+                    labels: ['Сторонник', 'Нейтрал', 'Критик'],
+                    datasets: [{
+                        data: data.pie,
+                        backgroundColor: ['#0f4396', '#8378bf', '#c80000']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // 3. CSAT график
+            const ctxCsat = document.getElementById('csatChart').getContext('2d');
+            csatChart = new Chart(ctxCsat, {
+                type: 'line',
+                data: {
+                    labels: ["3 кв. 24", "4 кв. 24", "1 кв. 25", "2 кв. 25", "3 кв. 25", "4 кв. 25", "1 кв. 26", "2 кв. 26"],
+                    datasets: [
+                        {
+                            label: 'Воспитательный отдел',
+                            data: [4.65, 4.61, 4.56, 4.59, 4.52, 4.66, 4.68, 4.57],
+                            borderColor: '#0284c7',
+                            backgroundColor: '#0284c7',
+                            pointRadius: 4,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Учебный отдел',
+                            data: [4.40, 4.32, 4.24, 4.16, 3.94, 4.37, 4.29, 4.17],
+                            borderColor: '#e11d48',
+                            backgroundColor: '#e11d48',
+                            pointRadius: 4,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 3.5, max: 5.0, grid: { color: '#f1f5f9' } }
+                    }
+                }
+            });
+
+            // 4. Зоны преподавателей
+            const ctxTeacher = document.getElementById('teacherChart').getContext('2d');
+            teacherChart = new Chart(ctxTeacher, {
+                type: 'bar',
+                data: {
+                    labels: ["1 кв. 25", "2 кв. 25", "3 кв. 25", "4 кв. 25", "1 кв. 26", "2 кв. 26"],
+                    datasets: [
+                        { label: 'Зеленая зона (>=4.5)', data: [62, 61, 56, 51, 49, 50], backgroundColor: '#10b981' },
+                        { label: 'Желтая зона (4.0-4.5)', data: [30, 38, 29, 30, 29, 32], backgroundColor: '#f59e0b' },
+                        { label: 'Красная зона (<4.0)', data: [9, 2, 3, 2, 9, 4], backgroundColor: '#ef4444' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } }
+                    }
+                }
+            });
+        }
+
+        function updateDashboard() {
+            const key = document.getElementById('filterSelect').value;
+            const data = datasets[key];
+
+            // Обновляем KPI
+            document.getElementById('kpiNPS').innerText = data.currentNPS;
+            document.getElementById('kpiScore').innerText = data.currentScore;
+            document.getElementById('kpiResp').innerText = data.currentResp;
+
+            // Обновляем комбо-график
+            comboChart.data.labels = data.quarters;
+            comboChart.data.datasets[0].data = data.resp;
+            comboChart.data.datasets[1].data = data.nps;
+            comboChart.data.datasets[2].data = data.scores;
+            comboChart.update();
+
+            // Обновляем Pie chart
+            pieChart.data.datasets[0].data = data.pie;
+            pieChart.update();
+        }
+
+        window.onload = initCharts;
+    </script>
+</body>
+</html>
